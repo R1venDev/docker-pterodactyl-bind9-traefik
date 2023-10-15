@@ -1,0 +1,22 @@
+$TTL 2D
+
+$ORIGIN local.example.pro.
+
+@	IN	SOA	ns.local.example.pro.  admin.example.pro. (
+			2023083100	; serial
+			12h		; refresh
+			15m		; retry
+			3w		; expire
+			2h		; minimum ttl
+)
+
+	IN	NS	ns.local.example.pro.
+
+ns	IN	A	10.20.3.2
+
+; -- add dns records below
+
+servers	IN	A	10.20.3.4
+*.servers IN	A	10.20.3.4
+panel IN A 10.20.3.5
+*.panel IN A 10.20.3.5

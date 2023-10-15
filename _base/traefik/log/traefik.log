@@ -1,0 +1,1 @@
+time="2023-10-15T14:51:48+03:00" level=debug msg="Authentication succeeded" middlewareName=traefik-auth@docker middlewareType=BasicAuth

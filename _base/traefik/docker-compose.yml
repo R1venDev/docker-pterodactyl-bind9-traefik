@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      proxy-network:
+        ipv4_address: 10.30.3.2
+      dns-network:
+        ipv4_address: 10.20.3.5
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CF_API_EMAIL=example@protonmail.com
+      - CF_DNS_API_TOKEN=mQWGqdywk0dH
+      # - CF_API_KEY=YOUR_API_KEY
+      # be sure to use the correct one depending on if you are using a token or key
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/acme.json:/acme.json
+      - ./data/config.yml:/config.yml:ro
+      - ./log:/var/log
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.panel.local.example.pro`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=Riven:$$2y$$05$$w7vWAQHE7REHY68OkkoocOcO/tEywF.uCJ0Hemunyq0VKVeXhl8IW"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.panel.local.example.pro`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=local.example.pro"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.local.example.pro"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+
+  whoami:
+    image: traefik/whoami:v1.8
+    networks:
+      - proxy-network
+      - dns-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mywhoami.rule=Host(`whoami.example.pro`) || Host(`www.whoami.example.pro`)
+      - traefik.http.services.mywhoami.loadbalancer.server.port=80
+      - traefik.http.middlewares.mywwwredirect.redirectregex.regex=^https://www\.(.*)
+      - traefik.http.middlewares.mywwwredirect.redirectregex.replacement=https://$${1}
+      - traefik.http.routers.mywhoami.middlewares=mywwwredirect
+
+networks:
+  proxy-network:
+    external: true
+  dns-network:
+    external: true
